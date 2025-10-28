@@ -6,9 +6,7 @@ Dockerized MongoDB + Redis stack for PayChase, with admin UIs for local developm
 ## What’s inside
 
 1. MongoDB 7 (primary DB)
-2. Mongo Express (Mongo UI)
 3. Redis 7 (queues, rate limits, caching)
-4. Redis Commander (Redis UI)
 5. Named volumes for data durability
 6. Bridge network paychase_net
 
@@ -29,6 +27,8 @@ docker compose up -d
 Mongo Express → http://localhost:8081
 Redis Commander → http://localhost:8082
 
+## Stop the services
+
 ```bash
 To stop the container : 
 docker compose down
@@ -48,9 +48,7 @@ docker compose down -v
 | Service         | Image                          | Port (host → container) | Purpose          |
 | --------------- | ------------------------------ | ----------------------- | ---------------- |
 | mongo           | mongo:7                        | 27017 → 27017           | Primary DB       |
-| mongo-express   | mongo-express:1.0.2            | 8081 → 8081             | Mongo admin UI   |
 | redis           | redis:7                        | 6379 → 6379             | Queues / caching |
-| redis-commander | rediscommander/redis-commander | 8082 → 8081             | Redis admin UI   |
 
 - Network: paychase_net
 - Volumes: mongo_data, redis_data
