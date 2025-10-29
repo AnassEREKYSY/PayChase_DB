@@ -6,7 +6,7 @@ services:
     container_name: ${MONGO_CONTAINER}
     restart: unless-stopped
     ports:
-      - "${MONGO_PORT}:27017"
+      - "127.0.0.1:27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
@@ -24,12 +24,12 @@ services:
     container_name: ${REDIS_CONTAINER}
     restart: unless-stopped
     ports:
-      - "${REDIS_PORT}:6379"
+      - "127.0.0.1:6380:6379"
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      test: ["CMD-SHELL", "redis-cli -p 6379 ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,4 +41,4 @@ volumes:
 
 networks:
   paychase_net:
-    driver: bridge
+    external: true
