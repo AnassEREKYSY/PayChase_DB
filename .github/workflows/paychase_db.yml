@@ -18,23 +18,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-
       - name: Compute lowercase owner
         run: echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
-
       - name: Set image tag
         id: meta
         run: echo "sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-
       - uses: docker/setup-buildx-action@v3
-
       - name: Build & Push DB Stack Image
         uses: docker/build-push-action@v6
         with:
@@ -54,7 +49,6 @@ jobs:
     steps:
       - name: Compute lowercase owner
         run: echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
-
       - name: Deploy to OVH
         uses: appleboy/ssh-action@v1.0.0
         env:
@@ -67,7 +61,6 @@ jobs:
           script: |
             set -euo pipefail
 
-            # --- Ensure Docker & Compose are installed ---
             if ! command -v docker >/dev/null 2>&1; then
               curl -fsSL https://get.docker.com | sh
               sudo usermod -aG docker $USER || true
@@ -78,14 +71,14 @@ jobs:
               chmod +x ~/.docker/cli-plugins/docker-compose
             fi
 
-            # --- Prepare app directory ---
             APP_DIR="$HOME/paychase_db"
             mkdir -p "$APP_DIR"
             cd "$APP_DIR"
 
             echo "$GHCR_TOKEN" | docker login "$REGISTRY" -u "${{ github.actor }}" --password-stdin
 
-            # --- Write env file ---
+            docker network create paychase_net || true
+
             cat > .env <<'EOF'
             COMPOSE_PROJECT_NAME=paychase_db
             MONGO_IMAGE=mongo:7
@@ -99,20 +92,19 @@ jobs:
             REDIS_PORT=6379
             EOF
 
-            # --- Write docker-compose.yml ---
             cat > docker-compose.yml <<'YML'
             version: "3.9"
 
             services:
               mongo:
-                image: \${MONGO_IMAGE}
-                container_name: \${MONGO_CONTAINER}
+                image: ${MONGO_IMAGE}
+                container_name: ${MONGO_CONTAINER}
                 restart: unless-stopped
                 ports:
-                  - "\${MONGO_PORT}:27017"
+                  - "${MONGO_PORT}:27017"
                 environment:
-                  MONGO_INITDB_ROOT_USERNAME: \${MONGO_INITDB_ROOT_USERNAME}
-                  MONGO_INITDB_ROOT_PASSWORD: \${MONGO_INITDB_ROOT_PASSWORD}
+                  MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+                  MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
                 volumes:
                   - mongo_data:/data/db
                 healthcheck:
@@ -123,11 +115,11 @@ jobs:
                 networks: [paychase_net]
 
               redis:
-                image: \${REDIS_IMAGE}
-                container_name: \${REDIS_CONTAINER}
+                image: ${REDIS_IMAGE}
+                container_name: ${REDIS_CONTAINER}
                 restart: unless-stopped
                 ports:
-                  - "\${REDIS_PORT}:6379"
+                  - "${REDIS_PORT}:6379"
                 command: ["redis-server", "--appendonly", "yes"]
                 volumes:
                   - redis_data:/data
@@ -144,12 +136,9 @@ jobs:
 
             networks:
               paychase_net:
-                driver: bridge
+                external: true
             YML
 
-            # --- Deploy the stack ---
             docker compose --project-name paychase_db down --remove-orphans || true
             docker compose --project-name paychase_db pull
             docker compose --project-name paychase_db up -d
-
-            echo " Mongo + Redis stack deployed successfully."
