@@ -17,14 +17,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks: [paychase_net]
+    networks:
+      - paychase_net
 
   redis:
     image: ${REDIS_IMAGE}
     container_name: ${REDIS_CONTAINER}
     restart: unless-stopped
     ports:
-      - "0.0.0.0:6380:6379"
+      - "0.0.0.0:6379:6379"
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis_data:/data
@@ -33,7 +34,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks: [paychase_net]
+    networks:
+      - paychase_net
 
 volumes:
   mongo_data:
