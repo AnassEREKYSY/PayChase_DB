@@ -2,38 +2,28 @@ version: "3.9"
 
 services:
   mongo:
-    image: ${MONGO_IMAGE}
-    container_name: ${MONGO_CONTAINER}
+    image: mongo:7
+    container_name: paychase-mongo
     restart: unless-stopped
     ports:
       - "0.0.0.0:27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpass
     volumes:
       - mongo_data:/data/db
-    healthcheck:
-      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' | grep 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - paychase_net
 
   redis:
-    image: ${REDIS_IMAGE}
-    container_name: ${REDIS_CONTAINER}
+    image: redis:7
+    container_name: paychase-redis
     restart: unless-stopped
     ports:
       - "0.0.0.0:6379:6379"
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis_data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli -p 6379 ping | grep PONG"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - paychase_net
 
